@@ -1,27 +1,63 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from deep_translator import GoogleTranslator
+import pyttsx3
+import speech_recognition as sr
 
-# Define the translation function
+# Initialize text-to-speech engine
+engine = pyttsx3.init()
+
+def speak_text(text):
+    """ Convert text to speech """
+    engine.say(text)
+    engine.runAndWait()
+
+def update_status(message):
+    """ Update the status label """
+    status_var.set(message)
+
 def translate_text_deep():
+    """ Translate text from source language to destination language """
     source_text = text_input.get("1.0", tk.END).strip()
     src_lang = source_lang_var.get()
     dest_lang = target_lang_var.get()
 
     if not source_text:
-        messagebox.showinfo("Input Error", "Please enter some text to translate.")
+        update_status("Error: Please enter some text to translate.")
         return
 
     try:
+        update_status("Translating...")
         translated_text = GoogleTranslator(source=src_lang, target=dest_lang).translate(source_text)
         result_var.set(translated_text)
+        speak_text(translated_text)  # Speak the translated text
+        update_status("Translation successful.")
     except Exception as e:
-        result_var.set(f"Error: {str(e)}")
+        update_status(f"Error: {str(e)}")
+
+def listen_and_translate():
+    """ Convert speech to text and translate """
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        update_status("Listening...")
+        try:
+            audio = recognizer.listen(source, timeout=10)
+            spoken_text = recognizer.recognize_google(audio)
+            text_input.delete("1.0", tk.END)
+            text_input.insert(tk.END, spoken_text)
+            update_status("Recognized speech. Translating...")
+            translate_text_deep()  # Translate the spoken text
+        except sr.UnknownValueError:
+            update_status("Could not understand the audio. Please try again.")
+        except sr.RequestError as e:
+            update_status(f"Could not request results; check your network connection. Error: {e}")
+        except Exception as e:
+            update_status(f"An unexpected error occurred: {e}")
 
 # Create the main window
 root = tk.Tk()
-root.title("Language Translator")
-root.geometry("500x650")
+root.title("Dark Mode Language Translator")
+root.geometry("500x500")
 root.configure(bg='#2b2b2b')  # Set background color to dark
 
 # Custom style for dark mode
@@ -63,12 +99,22 @@ target_lang_dropdown.pack(pady=5)
 translate_button = ttk.Button(root, text="Translate", command=translate_text_deep)
 translate_button.pack(pady=10)
 
+# Listen Button
+listen_button = ttk.Button(root, text="Listen & Translate", command=listen_and_translate)
+listen_button.pack(pady=10)
+
 # Translation Result Label
 result_label = ttk.Label(root, text="Translated Text:")
 result_label.pack(pady=5)
 result_var = tk.StringVar()
 result_entry = tk.Entry(root, textvariable=result_var, state="readonly", width=60, font=("Helvetica", 12), bg="#3c3c3c", fg="#ffffff", bd=0)
 result_entry.pack(pady=5)
+
+# Status Label
+status_var = tk.StringVar()
+status_label = ttk.Label(root, textvariable=status_var)
+status_label.pack(pady=10)
+update_status("Ready")
 
 # Run the application
 root.mainloop()
