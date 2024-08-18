@@ -56,8 +56,8 @@ def listen_and_translate():
 
 # Create the main window
 root = tk.Tk()
-root.title("Dark Mode Language Translator")
-root.geometry("500x500")
+root.title("Language Translator")
+root.geometry("500x650")
 root.configure(bg='#2b2b2b')  # Set background color to dark
 
 # Custom style for dark mode
